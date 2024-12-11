@@ -12,6 +12,10 @@ async function run() {
     // get workflow runs and write them to output/workflow-runs.json
     const workflowRuns = await githubClient.getWorkflowRuns();
     await write('workflow-runs.json', workflowRuns);
+
+    // get jobs for specific workflow run id
+    const jobs = await githubClient.getWorkflowJobs(12266565432);
+    await write('jobs.json', jobs);
 }
 
 run();

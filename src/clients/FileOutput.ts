@@ -8,7 +8,9 @@ export async function write(filename: string, data: Record<string, unknown> | un
     if (!existsSync(OUT_DIR)){
         await fs.mkdir(OUT_DIR);
     }
-    return fs.writeFile(path.join(OUT_DIR, filename), JSON.stringify(data, null, 2));
+    const filepath = path.join(OUT_DIR, filename);
+    console.log('Writing output to', filepath)
+    return fs.writeFile(filepath, JSON.stringify(data, null, 2));
 }
 
 export async function read(filename: string) {
