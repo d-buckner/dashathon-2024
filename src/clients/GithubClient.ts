@@ -7,8 +7,6 @@ const DEFAULT_REPO = 'Opensearch-Dashboards';
 
 const THROTTLE_WAIT = 200;
 
-// this hurts, but the sdk library doesn't manage response types automatically
-type PullRequests = Endpoints['GET /repos/{owner}/{repo}/pulls']['response']['data'];
 type ActionsRuns = Endpoints['GET /repos/{owner}/{repo}/actions/runs']['response']['data'];
 type ActionJobs = Endpoints['GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs']['response']['data'];
 
@@ -30,7 +28,11 @@ export default class GithubClient {
     }
 
     async getPullRequests() {
-        return this.get<PullRequests>('pulls');
+        return this.sdk.paginate(this.sdk.rest.pulls.list, {
+            owner: ORG,
+            repo: this.repo,
+            state: 'all'
+        });
     }
 
     async getWorkflowRuns() {
