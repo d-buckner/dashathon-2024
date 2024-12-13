@@ -17,3 +17,7 @@ export async function read(filename: string) {
     const content = await fs.readFile(path.join(OUT_DIR, filename), 'utf-8');
     return JSON.parse(content);
 }
+
+export async function getFileNames(): Promise<string[]> {
+    return fs.readdir(OUT_DIR);
+}

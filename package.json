@@ -5,17 +5,21 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "tsc && node dist/index.js"
+    "start": "tsc && node dist/index.js",
+    "ingest": "tsc && node dist/ingest.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/credential-provider-node": "^3.712.0",
     "@opensearch-project/opensearch": "^2.13.0",
+    "lodash.chunk": "^4.2.0",
     "lodash.throttle": "^4.1.1",
     "octokit": "^4.0.2"
   },
   "devDependencies": {
     "@octokit/types": "^13.6.2",
+    "@types/lodash.chunk": "^4.2.9",
     "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^22.10.1",
     "dotenv": "^16.4.7"
