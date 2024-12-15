@@ -28,11 +28,13 @@ export default class GithubClient {
     }
 
     async getPullRequests() {
-        return this.sdk.paginate(this.sdk.rest.pulls.list, {
+        const response = await this.sdk.rest.pulls.list({
             owner: ORG,
             repo: this.repo,
-            state: 'all'
+            state: 'all',
+            per_page: 50,
         });
+        return response.data;
     }
 
     async getWorkflowRuns() {

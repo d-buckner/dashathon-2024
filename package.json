@@ -5,8 +5,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "tsc && node dist/index.js",
-    "ingest": "tsc && node dist/ingest.js"
+    "extract:nocomp": "node dist/scripts/extract.js",
+    "extract": "tsc && npm run extract:nocomp",
+    "transform:nocomp": "node dist/scripts/transform.js",
+    "transform": "tsc && npm run transform:nocomp",
+    "load:nocomp": "tsc && node dist/scripts/load.js",
+    "load": "tsc && npm run load:nocomp",
+    "etl": "tsc && npm run extract:nocomp && npm run transform:nocomp && npm run load:nocomp"
   },
   "author": "",
   "license": "ISC",
@@ -21,7 +26,7 @@
     "@octokit/types": "^13.6.2",
     "@types/lodash.chunk": "^4.2.9",
     "@types/lodash.throttle": "^4.1.9",
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.10.2",
     "dotenv": "^16.4.7"
   }
 }

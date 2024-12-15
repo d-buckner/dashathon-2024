@@ -2,15 +2,13 @@ import chunk from 'lodash.chunk';
 import {defaultProvider} from '@aws-sdk/credential-provider-node';
 import {Client} from '@opensearch-project/opensearch';
 import {AwsSigv4Signer} from '@opensearch-project/opensearch/aws';
+import {Document} from '../types.js';
 
 const client = new Client({
     ...AwsSigv4Signer({
         region: 'us-west-2',
         service: 'aoss',
-        getCredentials: () => {
-            const credentialsProvider = defaultProvider();
-            return credentialsProvider();
-        },
+        getCredentials: defaultProvider(),
     }),
     node: process.env.OS_ENDPOINT,
 });
@@ -22,22 +20,24 @@ async function ensureIndexExists(index: string) {
     }
 }
 
-export async function bulkIngest(index: string, documents: Record<string, unknown>[]) {
+export async function bulkIngest(index: string, documents: Document[]) {
     await ensureIndexExists(index);
 
-    const chunks = chunk(documents, 100); // ingest at most 100 docs at a time
-    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-        console.log(`ingesting chunk ${chunkIndex + 1} of ${chunks.length} to ${index}`);
-        const chunk = chunks[chunkIndex];
-        await client.bulk({
-            index,
-            body: chunk.reduce((acc, doc) => {
-                acc.push({create: {}});
-                acc.push(doc);
-                return acc;
-            }, [] as Record<string, unknown>[])
-        })
-    }
+    const response = await client.helpers.bulk({
+        datasource: documents,
+        onDocument (doc) {
+            // The update operation always requires a tuple to be returned, with the
+            // first element being the action and the second being the update options.
+            return [
+              {
+                update: { _index: index, _id: doc.id }
+              },
+              { doc_as_upsert: true }
+            ]
+          }
+    });
+
+    console.log(response);
 }
 
 export default client;
