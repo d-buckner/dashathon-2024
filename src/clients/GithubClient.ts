@@ -14,9 +14,11 @@ type ActionJobs =
 
 type GithubClientConfig = {
   repo?: string;
+  entireHistory?: boolean;
 };
 
 export default class GithubClient {
+  config?: GithubClientConfig;
   repo: string;
   sdk: Octokit;
 
@@ -24,6 +26,7 @@ export default class GithubClient {
     this.sdk = new Octokit({
       auth: process.env.GITHUB_TOKEN,
     });
+    this.config = config;
     this.repo = config?.repo ?? DEFAULT_REPO;
     this.get = throttle(this.get.bind(this), THROTTLE_WAIT);
   }
@@ -64,7 +67,7 @@ export default class GithubClient {
         page,
       });
       issues.push(...response.data);
-      hasMore = response.data.length === 100;
+      hasMore = this.config?.entireHistory ? response.data.length === 100 : false;
       page++;
     }
 
