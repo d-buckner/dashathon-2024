@@ -44,17 +44,14 @@ export default class GithubClient {
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
     const startDate = twoWeeksAgo.toISOString();
 
-    const data = await this.sdk.paginate(
-      "GET /repos/{owner}/{repo}/actions/runs",
-      {
-        owner: ORG,
-        repo: this.repo,
-        event: "pull_request",
-        created: `>=${startDate}`,
-        per_page: 100,
-      }
-    );
-    return data;
+    const response = await this.sdk.rest.actions.listWorkflowRunsForRepo({
+      owner: ORG,
+      repo: this.repo,
+      event: "pull_request",
+      created: `>=${startDate}`,
+      per_page: 100,
+    })
+    return response.data.workflow_runs;
   }
 
   async getWorkflowJobs(runId: number) {
