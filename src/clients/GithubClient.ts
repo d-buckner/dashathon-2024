@@ -7,8 +7,6 @@ const DEFAULT_REPO = "Opensearch-Dashboards";
 
 const THROTTLE_WAIT = 200;
 
-type ActionsRuns =
-  Endpoints["GET /repos/{owner}/{repo}/actions/runs"]["response"]["data"];
 type ActionJobs =
   Endpoints["GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"]["response"]["data"];
 
@@ -42,8 +40,21 @@ export default class GithubClient {
   }
 
   async getWorkflowRuns() {
-    const actionsRuns = await this.get<ActionsRuns>("actions/runs");
-    return actionsRuns.workflow_runs;
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    const startDate = twoWeeksAgo.toISOString();
+
+    const data = await this.sdk.paginate(
+      "GET /repos/{owner}/{repo}/actions/runs",
+      {
+        owner: ORG,
+        repo: this.repo,
+        event: "pull_request",
+        created: `>=${startDate}`,
+        per_page: 100,
+      }
+    );
+    return data;
   }
 
   async getWorkflowJobs(runId: number) {
