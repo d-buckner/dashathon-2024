@@ -1,8 +1,8 @@
 import { read, write } from "../lib/FileOutput.js";
-import { Issue, PullRequest } from "../types.js";
+import { Issue, PullRequest, Action } from "../types.js";
 
 async function transform() {
-  Promise.all([transformPRs(), transformIssues()]);
+  Promise.all([transformPRs(), transformIssues(), transformActions()]);
 }
 
 async function transformPRs() {
@@ -39,6 +39,21 @@ async function transformIssues() {
     }
   });
   await write("issues.json", issues);
+}
+
+async function transformActions() {
+  const actions = await read<Action[]>("actions.json");
+  actions.forEach((action) => {
+    if (action.status === "completed") {
+      const run_time =
+        new Date(action.updated_at).getTime() -
+        new Date(action.created_at).getTime();
+      // @ts-ignore adding new attribute
+      action["run_time"] = run_time;
+    }
+  });
+
+  await write("actions.json", actions);
 }
 
 transform();
