@@ -9,7 +9,7 @@
     "extract": "tsc && npm run extract:nocomp",
     "transform:nocomp": "node dist/scripts/transform.js",
     "transform": "tsc && npm run transform:nocomp",
-    "load:nocomp": "tsc && node dist/scripts/load.js",
+    "load:nocomp": "node dist/scripts/load.js",
     "load": "tsc && npm run load:nocomp",
     "etl": "tsc && npm run extract:nocomp && npm run transform:nocomp && npm run load:nocomp"
   },

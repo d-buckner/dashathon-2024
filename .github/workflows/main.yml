@@ -1,6 +1,6 @@
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 8 * * 1"
   push:
   workflow_dispatch:
 
@@ -21,4 +21,5 @@ jobs:
         OS_ENDPOINT: ${{ secrets.OS_ENDPOINT }}
         OS_USERNAME: ${{ secrets.OS_USERNAME }}
         OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
+        OS_BACKFILL: "true"
       run: npm run etl

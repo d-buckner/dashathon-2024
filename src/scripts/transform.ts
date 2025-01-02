@@ -1,5 +1,6 @@
+import {getDeltaMS, msToDays, msToMins} from "../lib/DateUtils.js";
 import { read, write } from "../lib/FileOutput.js";
-import { Issue, PullRequest, Action } from "../types.js";
+import { Issue, PullRequest, WorkflowRun } from "../types.js";
 
 async function transform() {
   Promise.all([transformPRs(), transformIssues(), transformActions()]);
@@ -11,10 +12,10 @@ async function transformPRs() {
     if (!pr.merged_at) {
       return;
     }
-    const msToMerge =
-      new Date(pr.merged_at).getTime() - new Date(pr.created_at).getTime();
+    const endDate = pr.closed_at ? new Date(pr.closed_at) : new Date();
+    const deltaMS = getDeltaMS(new Date(pr.created_at), endDate);
     // @ts-ignore adding new attribute
-    pr["days_to_merge"] = Number((msToMerge / 86400000).toFixed(2));
+    pr["days_open"] = msToDays(deltaMS);
   });
   await write("prs.json", prs);
 }
@@ -42,14 +43,16 @@ async function transformIssues() {
 }
 
 async function transformActions() {
-  const actions = await read<Action[]>("actions.json");
+  const actions = await read<WorkflowRun[]>("actions.json");
   actions.forEach((action) => {
     if (action.status === "completed") {
-      const run_time =
-        new Date(action.updated_at).getTime() -
-        new Date(action.created_at).getTime();
+      const createdAt = new Date(action.created_at);
+      const updatedAt = new Date(action.updated_at);
+      const run_time = getDeltaMS(createdAt, updatedAt);
       // @ts-ignore adding new attribute
       action["run_time"] = run_time;
+      // @ts-ignore adding new attribute
+      action["run_time_minutes"] = msToMins(run_time);
     }
   });
 

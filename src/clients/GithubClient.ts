@@ -1,18 +1,20 @@
 import { Octokit } from "octokit";
-import { Endpoints, RequestParameters } from "@octokit/types";
-import throttle from "lodash.throttle";
+import {
+  WorkflowRun,
+  Issue,
+  PullRequest,
+  ActionRuns
+} from "../types.js";
+import {RequestInterface, RequestParameters} from "@octokit/types";
 
 const ORG = "opensearch-project";
 const DEFAULT_REPO = "Opensearch-Dashboards";
+const BACKFILL = process.env.OS_BACKFILL === 'true';
+const PAGE_SIZE = 100;
 
-const THROTTLE_WAIT = 200;
-
-type ActionJobs =
-  Endpoints["GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"]["response"]["data"];
 
 type GithubClientConfig = {
   repo?: string;
-  entireHistory?: boolean;
 };
 
 export default class GithubClient {
@@ -26,73 +28,60 @@ export default class GithubClient {
     });
     this.config = config;
     this.repo = config?.repo ?? DEFAULT_REPO;
-    this.get = throttle(this.get.bind(this), THROTTLE_WAIT);
   }
 
   async getPullRequests() {
-    const response = await this.sdk.rest.pulls.list({
+    return this.performAction<PullRequest[]>(this.sdk.rest.pulls.list, {
       owner: ORG,
       repo: this.repo,
       state: "all",
-      per_page: 50,
+      per_page: PAGE_SIZE,
     });
-    return response.data;
   }
 
-  async getWorkflowRuns() {
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-    const startDate = twoWeeksAgo.toISOString();
-
-    const response = await this.sdk.rest.actions.listWorkflowRunsForRepo({
+  async getWorkflowRuns(): Promise<WorkflowRun[]> {
+    const params: RequestParameters = {
       owner: ORG,
       repo: this.repo,
       event: "pull_request",
-      created: `>=${startDate}`,
-      per_page: 100,
-    })
-    return response.data.workflow_runs;
-  }
+      per_page: PAGE_SIZE,
+    };
 
-  async getWorkflowJobs(runId: number) {
-    const jobsWrapper = await this.get<ActionJobs>(
-      `actions/runs/${runId}/jobs`
-    );
-    return jobsWrapper.jobs;
-  }
-
-  async getIssues() {
-    const issues = [];
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore) {
-      const response = await this.sdk.rest.issues.listForRepo({
-        owner: ORG,
-        repo: this.repo,
-        state: "all",
-        per_page: 100,
-        page,
-      });
-      issues.push(...response.data);
-      hasMore = this.config?.entireHistory ? response.data.length === 100 : false;
-      page++;
+    if (!BACKFILL) {
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const startDate = twoWeeksAgo.toISOString();
+      params.created = `>=${startDate}`;
     }
 
-    return issues;
+    // for this particular API, we get different response schemas for paginated and non-paginated requests.
+    const actions = await this.performAction<WorkflowRun[] | ActionRuns>(this.sdk.rest.actions.listWorkflowRunsForRepo, params);
+
+    if ("workflow_runs" in actions) {
+      return actions.workflow_runs;
+    }
+
+    return actions;
   }
 
-  private async get<T>(path: string, options?: RequestParameters): Promise<T> {
-    console.log("Fetching", path);
-    const response = await this.sdk.request(
-      this.getEndpoint("GET", path),
-      options
-    );
-    return response.data;
+  getIssues() {
+    return this.performAction<Issue[]>(this.sdk.rest.issues.listForRepo, {
+      owner: ORG,
+      repo: this.repo,
+      state: "all",
+      per_page: PAGE_SIZE,
+    });
   }
 
-  private getEndpoint(verb: string, path: string) {
-    const repoEndpoint = `/repos/${ORG}/${this.repo}`;
-    return `${verb} ${repoEndpoint}/${path}`;
+  private async performAction<O>(
+    action: RequestInterface,
+    params: RequestParameters,
+  ): Promise<O> {
+    if (!BACKFILL) {
+      const response = await action(params as any);
+      return response.data;
+    }
+
+    return this.sdk.paginate(action, params as any) as O;
   }
 }
