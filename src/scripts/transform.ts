@@ -9,9 +9,6 @@ async function transform() {
 async function transformPRs() {
   const prs = await read<PullRequest[]>("prs.json");
   prs.forEach((pr) => {
-    if (!pr.merged_at) {
-      return;
-    }
     const endDate = pr.closed_at ? new Date(pr.closed_at) : new Date();
     const deltaMS = getDeltaMS(new Date(pr.created_at), endDate);
     // @ts-ignore adding new attribute
