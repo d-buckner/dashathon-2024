@@ -1,4 +1,4 @@
-import {getDeltaMS, msToDays, msToMins} from "../lib/DateUtils.js";
+import { getDeltaMS, msToDays, msToMins } from "../lib/DateUtils.js";
 import { read, write } from "../lib/FileOutput.js";
 import { Issue, PullRequest, WorkflowRun } from "../types.js";
 
@@ -18,7 +18,7 @@ async function transformPRs() {
 }
 
 async function transformIssues() {
-  const issues = await read<Issue[]>("issues.json");
+  const issues = await read<Issue[]>("issues_only.json");
   issues.forEach((issue) => {
     if (issue.closed_at) {
       const msToClose =
@@ -36,7 +36,7 @@ async function transformIssues() {
       );
     }
   });
-  await write("issues.json", issues);
+  await write("issues_only.json", issues);
 }
 
 async function transformActions() {
