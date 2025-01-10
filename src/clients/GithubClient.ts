@@ -10,7 +10,7 @@ import { RequestInterface, RequestParameters } from "@octokit/types";
 
 const ORG = "opensearch-project";
 const DEFAULT_REPO = "Opensearch-Dashboards";
-const BACKFILL = new Date().getDate() % 2 === 0;
+const BACKFILL = process.env.OS_BACKFILL === "true";
 const PAGE_SIZE = 100;
 
 type GithubClientConfig = {
