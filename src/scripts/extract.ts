@@ -15,6 +15,10 @@ async function extract() {
   // get actions and write them to output/actions.json
   const actions = await githubClient.getWorkflowRuns();
   await write("actions.json", actions);
+
+  // get action jobs and write them to output/jobs.json
+  const jobs = await githubClient.getJobs();
+  await write("jobs.json", jobs);
 }
 
 extract();
