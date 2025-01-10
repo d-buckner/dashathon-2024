@@ -1,10 +1,16 @@
 import { Octokit } from "octokit";
-import { WorkflowRun, Issue, PullRequest, ActionRuns } from "../types.js";
+import {
+  WorkflowRun,
+  Issue,
+  PullRequest,
+  ActionRuns,
+  JobRun,
+} from "../types.js";
 import { RequestInterface, RequestParameters } from "@octokit/types";
 
 const ORG = "opensearch-project";
 const DEFAULT_REPO = "Opensearch-Dashboards";
-const BACKFILL = process.env.OS_BACKFILL === "true";
+const BACKFILL = new Date().getDate() % 2 === 0;
 const PAGE_SIZE = 100;
 
 type GithubClientConfig = {
@@ -59,6 +65,41 @@ export default class GithubClient {
     }
 
     return actions;
+  }
+
+  async getWorkflowJobs(workflow: WorkflowRun): Promise<any[]> {
+    const params: RequestParameters = {
+      owner: ORG,
+      repo: this.repo,
+      per_page: PAGE_SIZE,
+      run_id: workflow.id,
+    };
+
+    const jobs = await this.performAction<JobRun[]>(
+      this.sdk.rest.actions.listJobsForWorkflowRun,
+      params
+    );
+
+    return jobs;
+  }
+
+  async getJobs(): Promise<JobRun[]> {
+    const workflows = await this.getWorkflowRuns();
+
+    const targetWorkflows = workflows.filter(
+      (workflow) =>
+        workflow.name === "Run cypress tests" ||
+        workflow.name === "Build and test"
+    );
+
+    const jobs: JobRun[] = [];
+
+    for (const workflow of targetWorkflows) {
+      const job = await this.getWorkflowJobs(workflow);
+      jobs.push(...job);
+    }
+
+    return jobs;
   }
 
   async getIssues(): Promise<Issue[]> {

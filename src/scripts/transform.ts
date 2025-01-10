@@ -1,9 +1,14 @@
 import { getDeltaMS, msToDays, msToMins } from "../lib/DateUtils.js";
 import { read, write } from "../lib/FileOutput.js";
-import { Issue, PullRequest, WorkflowRun } from "../types.js";
+import { Issue, JobRun, PullRequest, WorkflowRun } from "../types.js";
 
 async function transform() {
-  Promise.all([transformPRs(), transformIssues(), transformActions()]);
+  Promise.all([
+    transformPRs(),
+    transformIssues(),
+    transformActions(),
+    transformJobs(),
+  ]);
 }
 
 async function transformPRs() {
@@ -54,6 +59,33 @@ async function transformActions() {
   });
 
   await write("actions.json", actions);
+}
+
+async function transformJobs() {
+  const jobs = await read<JobRun[]>("jobs.json");
+  jobs.forEach((job) => {
+    if (job.status === "completed" && job.completed_at) {
+      const createdAt = new Date(job.started_at);
+      const updatedAt = new Date(job.completed_at);
+      const run_time = getDeltaMS(createdAt, updatedAt);
+      // @ts-ignore adding new attribute
+      job["run_time"] = run_time;
+      // @ts-ignore adding new attribute
+      job["run_time_minutes"] = msToMins(run_time);
+
+      if (job.conclusion === "failure") {
+        const failedStep = job.steps?.find(
+          (step) => step.conclusion === "failure"
+        );
+        if (failedStep) {
+          // @ts-ignore adding new attribute
+          job["failed_step"] = failedStep.name;
+        }
+      }
+    }
+  });
+
+  await write("jobs.json", jobs);
 }
 
 transform();

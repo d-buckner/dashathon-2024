@@ -12,4 +12,7 @@ export type ActionRuns =
 export type WorkflowRun =
   ActionRuns["workflow_runs"][0];
 
+export type JobRun = 
+ Endpoints["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"]["response"]["data"]
+
 export type Document = Record<string, unknown> & { id: number };
