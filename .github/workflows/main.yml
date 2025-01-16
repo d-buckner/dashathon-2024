@@ -21,5 +21,5 @@ jobs:
         OS_ENDPOINT: ${{ secrets.OS_ENDPOINT }}
         OS_USERNAME: ${{ secrets.OS_USERNAME }}
         OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
-        OS_BACKFILL: "true"
+        OS_BACKFILL: "false"
       run: npm run etl
